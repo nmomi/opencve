@@ -2,7 +2,7 @@ from flask import Blueprint
 from flask_restful import Api
 
 from opencve.api.alerts import AlertListResource, AlertResource
-from opencve.api.cves import CveListResource, CveResource
+from opencve.api.cves import CveListResource, CveResource, CveTestResource
 from opencve.api.cwes import CweListResource, CweResource, CweCveResource
 from opencve.api.products import (
     FlatProductListResource,
@@ -44,3 +44,4 @@ api.add_resource(ProductResource, "/vendors/<string:vendor>/products/<string:pro
 api.add_resource(
     ProductCveResource, "/vendors/<string:vendor>/products/<string:product>/cve"
 )
+api.add_resource(CveTestResource, "/test/cve")

@@ -6,7 +6,7 @@ from opencve.api.fields import CveVendorsField, DatetimeField
 from opencve.controllers.cves import CveController
 
 
-cves_fields = {
+cve_base_fields = {
     "id": fields.String(attribute="cve_id"),
     "summary": fields.String(attribute="summary"),
     "created_at": DatetimeField(),
@@ -14,7 +14,7 @@ cves_fields = {
 }
 
 cve_fields = dict(
-    cves_fields,
+    cve_base_fields,
     **{
         "cvss": {
             "v2": fields.Float(attribute="cvss2"),
@@ -25,6 +25,11 @@ cve_fields = dict(
         "raw_nvd_data": fields.Raw(attribute="json"),
     }
 )
+
+cves_fields = {
+    "total": fields.Integer,
+    "items": fields.List(fields.Nested(cve_base_fields))
+}
 
 
 class CveListResource(BaseResource):
@@ -37,3 +42,11 @@ class CveResource(BaseResource):
     @marshal_with(cve_fields)
     def get(self, id):
         return CveController.get({"cve_id": id})
+
+
+class CveTestResource(BaseResource):
+    @marshal_with(cves_fields)
+    def get(self):
+        result = CveController.list_test(request.args)
+        print(result)
+        return result

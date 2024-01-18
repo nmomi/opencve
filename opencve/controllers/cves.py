@@ -60,7 +60,8 @@ class CveController(BaseController):
                     name=possible_product, vendor_id=vendor.id
                 ).first()
             else:
-                product = Product.query.filter_by(name=possible_product).first()
+                product = Product.query.filter_by(
+                    name=possible_product).first()
 
             query = query.filter(
                 or_(
@@ -144,3 +145,8 @@ class CveController(BaseController):
             )
 
         return query, {"vendor": vendor, "product": product, "tag": tag}
+
+    @classmethod
+    def list_items(cls, args={}):
+        objects, _, _ = cls.list(args)
+        return {"items": objects.items, "total": objects.total}

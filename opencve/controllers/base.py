@@ -7,6 +7,7 @@ class BaseController(object):
     model = None
     order = None
     per_page_param = None
+    limit_parameter = "limit"
     page_parameter = "page"
     schema = {}
 
@@ -19,9 +20,11 @@ class BaseController(object):
         args = ImmutableMultiDict(args)
 
         parsed_args = {
-            cls.page_parameter: args.get(cls.page_parameter, type=int, default=1)
+            cls.page_parameter: args.get(
+                cls.page_parameter, type=int, default=1),
+            cls.per_page_param: args.get(
+                cls.limit_parameter, type=int, default=app.config[cls.per_page_param])
         }
-
         for key in args.keys():
             if key in cls.schema.keys():
                 parsed_args[key] = args.get(
@@ -44,7 +47,8 @@ class BaseController(object):
         query, metas = cls.build_query(args)
 
         objects = query.order_by(*cls.order).paginate(
-            args.get(cls.page_parameter), app.config[cls.per_page_param], True
+            args.get(
+                cls.page_parameter), args.get(cls.per_page_param), True
         )
 
         pagination = cls.get_pagination(args, objects)

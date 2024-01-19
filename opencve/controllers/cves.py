@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 
 from flask import current_app as app
 from flask import abort, redirect, render_template, request, url_for
@@ -29,6 +30,7 @@ class CveController(BaseController):
         "cwe": {"type": str},
         "tag": {"type": str},
         "user_id": {"type": str},
+        "recent": {"type": str}
     }
 
     @classmethod
@@ -46,6 +48,12 @@ class CveController(BaseController):
 
         if product_query:
             product_query = product_query.replace(" ", "_").lower()
+
+        # Filter by updated within a time range
+        if args.get("recent"):
+            query = query.filter(
+                Cve.updated_at >= datetime.now() - timedelta(days=int(args.get("recent")))
+            )
 
         # Filter by keyword
         if args.get("search"):

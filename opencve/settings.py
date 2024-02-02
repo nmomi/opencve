@@ -44,8 +44,8 @@ class Config(object):
     INCLUDE_ANALYTICS = config.getboolean("core", "include_analytics", fallback=False)
 
     # Customize the server name
-    if config.get("core", "server_name"):
-        SERVER_NAME = config.get("core", "server_name")
+    # if config.get("core", "server_name"):
+    #     SERVER_NAME = config.get("core", "server_name")
 
     # Database
     SQLALCHEMY_TRACK_MODIFICATIONS = False

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from flask import current_app as app
 from flask import abort, redirect, render_template, request, url_for
 from flask_paginate import Pagination
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, cast, String
 
 from opencve.constants import PRODUCT_SEPARATOR
 from opencve.controllers.base import BaseController
@@ -30,11 +30,11 @@ class CveController(BaseController):
         "cwe": {"type": str},
         "tag": {"type": str},
         "user_id": {"type": str},
-        "recent": {"type": str}
+        "recent": {"type": str},
     }
 
     @classmethod
-    def build_query(cls, args):
+    def build_query(cls, args, vendor_ids, product_ids):
         vendor = None
         product = None
         tag = None
@@ -75,8 +75,10 @@ class CveController(BaseController):
                 or_(
                     Cve.cve_id.contains(args.get("search")),
                     Cve.summary.ilike(f"%{args.get('search')}%"),
-                    Cve.vendors.contains([vendor.name]) if vendor else None,
-                    Cve.vendors.contains([product.name]) if product else None,
+                    Cve.vendors.contains(
+                        [vendor.name]) if vendor else None,
+                    cast(Cve.vendors, String).like(
+                        f'%{PRODUCT_SEPARATOR}{product.name}"%') if product else None
                 )
             )
 
@@ -137,7 +139,19 @@ class CveController(BaseController):
             product = Product.query.filter_by(name=product_query).first()
             if not product:
                 abort(404, "Not found.")
-            query = query.filter(Cve.vendors.contains([product.name]))
+            query = query.filter(cast(Cve.vendors, String).like(
+                f'%{PRODUCT_SEPARATOR}{product.name}"%'))
+
+        # Filter by vendor and product list
+        if vendor_ids or product_ids:
+            vendors = Vendor.query.filter(Vendor.id.in_(vendor_ids)).all()
+            products = Product.query.filter(Product.id.in_(product_ids)).all()
+            vendors = [v.name for v in vendors]
+            products = [
+                f"{p.vendor.name}{PRODUCT_SEPARATOR}{p.name}" for p in products]
+            vendor_product_list = vendors + products
+            query = query.filter(
+                or_(*[Cve.vendors.contains([p]) for p in vendor_product_list]))
 
         # Filter by tag
         if args.get("tag"):
@@ -155,6 +169,19 @@ class CveController(BaseController):
         return query, {"vendor": vendor, "product": product, "tag": tag}
 
     @classmethod
-    def list_items(cls, args={}):
-        objects, _, _ = cls.list(args)
+    def list(cls, args={}, vendor_ids=None, product_ids=None):
+        args = cls.parse_args(args)
+        query, metas = cls.build_query(args, vendor_ids, product_ids)
+
+        objects = query.order_by(*cls.order).paginate(
+            args.get(
+                cls.page_parameter), args.get(cls.per_page_param), True
+        )
+
+        pagination = cls.get_pagination(args, objects)
+        return objects, metas, pagination
+
+    @classmethod
+    def list_items(cls, args={}, vendor_ids=None, product_ids=None):
+        objects, _, _ = cls.list(args, vendor_ids, product_ids)
         return {"items": objects.items, "total": objects.total}

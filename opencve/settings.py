@@ -50,6 +50,7 @@ class Config(object):
     # Database
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = config.get("core", "database_uri")
+    # SQLALCHEMY_ECHO = True
 
     # Celery
     CELERY_CONF = {
@@ -155,7 +156,7 @@ class Config(object):
         cel.init_app(app)
 
         # CSRF protection
-        csrf.init_app(app)
+        # csrf.init_app(app)
 
         # SQLAlchemy
         db.init_app(app)

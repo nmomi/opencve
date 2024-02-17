@@ -34,7 +34,7 @@ class CveController(BaseController):
     }
 
     @classmethod
-    def build_query(cls, args, vendor_ids, product_ids):
+    def build_query(cls, args, vp_list):
         vendor = None
         product = None
         tag = None
@@ -48,6 +48,12 @@ class CveController(BaseController):
 
         if product_query:
             product_query = product_query.replace(" ", "_").lower()
+
+        # Filter by vendor and product list
+        if vp_list:
+
+            query = query.filter(
+                or_(*[Cve.vendors.contains([p]) for p in vp_list]))
 
         # Filter by updated within a time range
         if args.get("recent"):
@@ -142,17 +148,6 @@ class CveController(BaseController):
             query = query.filter(cast(Cve.vendors, String).like(
                 f'%{PRODUCT_SEPARATOR}{product.name}"%'))
 
-        # Filter by vendor and product list
-        if vendor_ids or product_ids:
-            vendors = Vendor.query.filter(Vendor.id.in_(vendor_ids)).all()
-            products = Product.query.filter(Product.id.in_(product_ids)).all()
-            vendors = [v.name for v in vendors]
-            products = [
-                f"{p.vendor.name}{PRODUCT_SEPARATOR}{p.name}" for p in products]
-            vendor_product_list = vendors + products
-            query = query.filter(
-                or_(*[Cve.vendors.contains([p]) for p in vendor_product_list]))
-
         # Filter by tag
         if args.get("tag"):
             tag = UserTagController.get(
@@ -169,9 +164,9 @@ class CveController(BaseController):
         return query, {"vendor": vendor, "product": product, "tag": tag}
 
     @classmethod
-    def list(cls, args={}, vendor_ids=None, product_ids=None):
+    def list(cls, args={}, vp_list=None):
         args = cls.parse_args(args)
-        query, metas = cls.build_query(args, vendor_ids, product_ids)
+        query, metas = cls.build_query(args, vp_list)
 
         objects = query.order_by(*cls.order).paginate(
             args.get(
@@ -182,6 +177,6 @@ class CveController(BaseController):
         return objects, metas, pagination
 
     @classmethod
-    def list_items(cls, args={}, vendor_ids=None, product_ids=None):
-        objects, _, _ = cls.list(args, vendor_ids, product_ids)
+    def list_items(cls, args={}, vp_list=None):
+        objects, _, _ = cls.list(args, vp_list)
         return {"items": objects.items, "total": objects.total}

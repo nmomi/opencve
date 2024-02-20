@@ -10,6 +10,7 @@ from opencve.controllers.vendors import VendorController
 
 
 product_fields = {
+    "id": fields.String(attribute="id"),
     "name": fields.String(attribute="name"),
     "human_name": HumanizedNameField(attribute="name"),
 }

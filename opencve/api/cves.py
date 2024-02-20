@@ -53,6 +53,11 @@ class CveListResource(BaseResource):
     def get(self):
         return CveController.list_items(request.args)
 
+    @marshal_with(cves_fields)
+    def post(self):
+        vp_list = request.json.get("vp_list")
+        return CveController.list_items(request.args, vp_list)
+
 
 class CveResource(BaseResource):
     @marshal_with(cve_fields)

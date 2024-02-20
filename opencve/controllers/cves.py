@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from flask import current_app as app
 from flask import abort, redirect, render_template, request, url_for
 from flask_paginate import Pagination
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, cast, String
 
 from opencve.constants import PRODUCT_SEPARATOR
 from opencve.controllers.base import BaseController
@@ -30,11 +30,11 @@ class CveController(BaseController):
         "cwe": {"type": str},
         "tag": {"type": str},
         "user_id": {"type": str},
-        "recent": {"type": str}
+        "recent": {"type": str},
     }
 
     @classmethod
-    def build_query(cls, args):
+    def build_query(cls, args, vp_list):
         vendor = None
         product = None
         tag = None
@@ -48,6 +48,12 @@ class CveController(BaseController):
 
         if product_query:
             product_query = product_query.replace(" ", "_").lower()
+
+        # Filter by vendor and product list
+        if vp_list:
+
+            query = query.filter(
+                or_(*[Cve.vendors.contains([p]) for p in vp_list]))
 
         # Filter by updated within a time range
         if args.get("recent"):
@@ -75,8 +81,10 @@ class CveController(BaseController):
                 or_(
                     Cve.cve_id.contains(args.get("search")),
                     Cve.summary.ilike(f"%{args.get('search')}%"),
-                    Cve.vendors.contains([vendor.name]) if vendor else None,
-                    Cve.vendors.contains([product.name]) if product else None,
+                    Cve.vendors.contains(
+                        [vendor.name]) if vendor else None,
+                    cast(Cve.vendors, String).like(
+                        f'%{PRODUCT_SEPARATOR}{product.name}"%') if product else None
                 )
             )
 
@@ -137,7 +145,8 @@ class CveController(BaseController):
             product = Product.query.filter_by(name=product_query).first()
             if not product:
                 abort(404, "Not found.")
-            query = query.filter(Cve.vendors.contains([product.name]))
+            query = query.filter(cast(Cve.vendors, String).like(
+                f'%{PRODUCT_SEPARATOR}{product.name}"%'))
 
         # Filter by tag
         if args.get("tag"):
@@ -155,6 +164,19 @@ class CveController(BaseController):
         return query, {"vendor": vendor, "product": product, "tag": tag}
 
     @classmethod
-    def list_items(cls, args={}):
-        objects, _, _ = cls.list(args)
+    def list(cls, args={}, vp_list=None):
+        args = cls.parse_args(args)
+        query, metas = cls.build_query(args, vp_list)
+
+        objects = query.order_by(*cls.order).paginate(
+            args.get(
+                cls.page_parameter), args.get(cls.per_page_param), True
+        )
+
+        pagination = cls.get_pagination(args, objects)
+        return objects, metas, pagination
+
+    @classmethod
+    def list_items(cls, args={}, vp_list=None):
+        objects, _, _ = cls.list(args, vp_list)
         return {"items": objects.items, "total": objects.total}

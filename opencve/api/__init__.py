@@ -12,6 +12,7 @@ from opencve.api.products import (
 )
 from opencve.api.reports import ReportListResource, ReportResource
 from opencve.api.vendors import VendorListResource, VendorResource, VendorCveResource
+from opencve.api.vendors_products import MyVendorResource, MyProductResource
 
 from opencve.api.subscriptions import (
     SubscriptionListRessourceVendor,
@@ -37,8 +38,8 @@ api.add_resource(SubscriptionListRessourceProduct,
 api.add_resource(ReportResource, "/reports/<string:link>")
 api.add_resource(AlertListResource, "/reports/<string:link>/alerts")
 api.add_resource(AlertResource, "/reports/<string:link>/alerts/<string:id>")
-api.add_resource(FlatProductListResource, "/products")
-api.add_resource(VendorListResource, "/vendors")
+# api.add_resource(FlatProductListResource, "/products")
+# api.add_resource(VendorListResource, "/vendors")
 api.add_resource(VendorResource, "/vendors/<string:name>")
 api.add_resource(VendorCveResource, "/vendors/<string:name>/cve")
 api.add_resource(ProductListResource, "/vendors/<string:vendor>/products")
@@ -46,4 +47,10 @@ api.add_resource(
     ProductResource, "/vendors/<string:vendor>/products/<string:product>")
 api.add_resource(
     ProductCveResource, "/vendors/<string:vendor>/products/<string:product>/cve"
+)
+api.add_resource(
+    MyVendorResource, "/vendors"
+)
+api.add_resource(
+    MyProductResource, "/products"
 )

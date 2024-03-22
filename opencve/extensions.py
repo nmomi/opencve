@@ -92,7 +92,7 @@ debug_toolbar = DebugToolbarExtension()
 csrf = CSRFProtect()
 
 # SQLAlchemy
-db = SQLAlchemy(session_options={"autoflush": False})
+db = SQLAlchemy(session_options={"autoflush": False}, engine_options={"pool_pre_ping": True})
 
 # Flask gravatar
 gravatar = Gravatar(
